@@ -1,0 +1,252 @@
+Task:
+Build a SIMPLE and SCALABLE RETAIL SHOP MANAGEMENT SYSTEM for small and medium businesses in India/Kerala.
+
+Target Shops:
+- Grocery
+- Electronics
+- Fashion
+- Stationery
+- Hardware
+- Mobile Shops
+
+Tech Stack:
+- Next.js latest app router
+- TypeScript
+- TailwindCSS
+- shadcn/ui
+- Mongo DB
+- Prisma ORM
+- REST API
+- JWT Authentication
+
+Goal:
+Keep the application SIMPLE, FAST, and EASY TO USE for shop owners with minimal technical knowledge.
+
+==================================================
+CORE FEATURES
+==================================================
+
+1. AUTHENTICATION
+- Login
+- Signup
+- Forgot password
+- JWT auth
+- Role-based access
+
+Roles:
+- Admin
+- Owner (Vendor)
+- Manager
+- Cashier
+
+==================================================
+2. DASHBOARD
+==================================================
+
+Dashboard widgets:
+- Today sales
+- Monthly sales
+- Total products
+- Low stock products
+- Recent sales
+- Top selling products
+- Revenue chart
+- Pending payments
+
+==================================================
+3. PRODUCT MANAGEMENT
+==================================================
+
+Features:
+- Add/Edit/Delete products
+- Barcode support
+- SKU generation
+- Product categories
+- Product brands
+- Product images
+- Purchase price
+- Selling price
+- GST %
+- Stock quantity
+- Low stock alert
+- Product search
+- Bulk import/export
+
+Product categories support:
+- Grocery items
+- Electronics
+- Fashion products
+- Stationery
+- Hardware items
+- Mobile accessories
+
+==================================================
+4. INVENTORY MANAGEMENT
+==================================================
+
+Features:
+- Real-time stock tracking
+- Stock in/out
+- Stock adjustment
+- Low stock alerts
+- Damaged stock
+- Expiry tracking (for grocery)
+- Inventory history
+
+==================================================
+5. POS BILLING SYSTEM
+==================================================
+
+Create modern POS interface:
+- Fast billing
+- Barcode scanner support
+- Search products quickly
+- Cart system
+- Discount support
+- GST calculation
+- UPI/Cash/Card payments
+- Print invoice
+- Thermal printer support
+- Hold bills
+- Return/refund
+
+==================================================
+6. CUSTOMER MANAGEMENT
+==================================================
+
+Features:
+- Customer profiles
+- Mobile number tracking
+- Purchase history
+- Credit balance
+- Loyalty points
+- WhatsApp invoice sharing
+
+==================================================
+7. SUPPLIER MANAGEMENT
+==================================================
+
+Features:
+- Supplier details
+- Purchase history
+- Pending payments
+- Supplier ledger
+
+==================================================
+8. PURCHASE MANAGEMENT
+==================================================
+
+Features:
+- Add purchases
+- Supplier invoices
+- Purchase returns
+- Auto stock update
+- Purchase history
+
+==================================================
+9. EXPENSE MANAGEMENT
+==================================================
+
+Features:
+- Add daily expenses
+- Expense categories
+- Expense reports
+
+==================================================
+10. REPORTS
+==================================================
+
+Generate reports:
+- Sales report
+- Profit/Loss
+- GST report
+- Stock report
+- Purchase report
+- Expense report
+- Daily/Monthly reports
+
+Export:
+- PDF
+- Excel
+
+==================================================
+11. MULTI-BRANCH SUPPORT
+==================================================
+
+Features:
+- Multiple shop branches
+- Branch-wise inventory
+- Branch sales reports
+
+==================================================
+12. NOTIFICATIONS
+==================================================
+
+- Low stock alerts
+- Payment reminders
+- Expiry alerts
+
+==================================================
+13. INDIA/KERALA FEATURES
+==================================================
+
+- GST billing
+- CGST/SGST support
+- HSN code support
+- UPI QR billing
+- WhatsApp invoice sharing
+- Malayalam language support
+- Thermal printer support
+
+==================================================
+14. DATABASE DESIGN
+==================================================
+
+Create schema for:
+- Users
+- Roles
+- Shops
+- Branches
+- Products
+- Categories
+- Inventory
+- Sales
+- Customers
+- Suppliers
+- Purchases
+- Expenses
+- Payments
+
+Add:
+- Proper relations
+- Indexing
+- Scalable structure
+
+==================================================
+15. UI PAGES
+==================================================
+
+Pages:
+- Login
+- Dashboard
+- POS Billing
+- Products
+- Inventory
+- Customers
+- Suppliers
+- Purchases
+- Expenses
+- Reports
+- Settings
+
+==================================================
+16. UI/UX REQUIREMENTS
+==================================================
+
+- Simple UI
+- Mobile responsive
+- Fast loading
+- Clean sidebar
+- Dark mode support
+- Easy navigation
+- Beginner-friendly design
