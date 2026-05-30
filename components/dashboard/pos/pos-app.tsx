@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import { formatINR } from "@/lib/format";
 import { finalizeSale, holdSale, discardHeldSale } from "@/lib/actions/pos";
+import { quickAddProductFromPos } from "@/lib/actions/products";
 import type { BranchListItem } from "@/lib/queries/branches";
 import type { HeldSale } from "@/lib/queries/sales";
 
@@ -102,6 +103,7 @@ export function PosApp({
   const [held, setHeld] = useState<HeldSale[]>(heldSales);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
 
   // Live search
   useEffect(() => {
@@ -394,9 +396,14 @@ export function PosApp({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && results[0]) {
-                e.preventDefault();
-                addToCart(results[0]);
+              if (e.key === "Enter") {
+                if (results[0]) {
+                  e.preventDefault();
+                  addToCart(results[0]);
+                } else if (query.trim() && !searching) {
+                  e.preventDefault();
+                  setQuickAddOpen(true);
+                }
               }
             }}
             autoFocus
@@ -422,7 +429,18 @@ export function PosApp({
               <p className="p-4 text-sm text-muted-foreground">Searching…</p>
             )}
             {!searching && results.length === 0 && (
-              <p className="p-4 text-sm text-muted-foreground">No matches.</p>
+              <div className="flex items-center justify-between gap-3 p-4">
+                <p className="text-sm text-muted-foreground">
+                  No matches for &ldquo;{query}&rdquo;.
+                </p>
+                <Button
+                  size="sm"
+                  onClick={() => setQuickAddOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Add new product
+                </Button>
+              </div>
             )}
             {results.map((r) => (
               <button
@@ -705,7 +723,179 @@ export function PosApp({
           Clear
         </Button>
       </aside>
+
+      <QuickAddProductDialog
+        open={quickAddOpen}
+        onOpenChange={setQuickAddOpen}
+        initialName={query}
+        branchId={branchId}
+        gstEnabled={gstEnabled}
+        onCreated={(p) => {
+          addToCart(p);
+          setQuickAddOpen(false);
+        }}
+      />
     </div>
+  );
+}
+
+function QuickAddProductDialog(props: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  initialName: string;
+  branchId: string;
+  gstEnabled: boolean;
+  onCreated: (p: PosProduct) => void;
+}) {
+  return (
+    <Dialog open={props.open} onOpenChange={props.onOpenChange}>
+      {props.open && <QuickAddProductForm {...props} />}
+    </Dialog>
+  );
+}
+
+function QuickAddProductForm({
+  onOpenChange,
+  initialName,
+  branchId,
+  gstEnabled,
+  onCreated,
+}: {
+  onOpenChange: (v: boolean) => void;
+  initialName: string;
+  branchId: string;
+  gstEnabled: boolean;
+  onCreated: (p: PosProduct) => void;
+}) {
+  const [name, setName] = useState(initialName);
+  const [sku, setSku] = useState("");
+  const [unit, setUnit] = useState("PCS");
+  const [sellingPrice, setSellingPrice] = useState("");
+  const [gstRate, setGstRate] = useState("0");
+  const [openingStock, setOpeningStock] = useState("1");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit() {
+    if (!name.trim()) {
+      toast.error("Name is required");
+      return;
+    }
+    if (!sellingPrice || Number(sellingPrice) < 0) {
+      toast.error("Enter a valid selling price");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const res = await quickAddProductFromPos({
+        name: name.trim(),
+        sku: sku.trim() || undefined,
+        unit: unit.trim() || "PCS",
+        sellingPrice,
+        gstRate: gstEnabled ? gstRate : 0,
+        openingStock,
+        branchId,
+      });
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success(`${res.product.name} added`);
+      onCreated(res.product);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Add new product</DialogTitle>
+          <DialogDescription>
+            Quick-create a product and add it to this bill. You can edit the
+            full details later from Products.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <div className="grid gap-1.5">
+            <Label className="text-xs text-muted-foreground">Name</Label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-1.5">
+              <Label className="text-xs text-muted-foreground">
+                SKU <span className="text-muted-foreground/70">(auto)</span>
+              </Label>
+              <Input
+                value={sku}
+                onChange={(e) => setSku(e.target.value)}
+                placeholder="Auto-generated"
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label className="text-xs text-muted-foreground">Unit</Label>
+              <Input
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                placeholder="PCS"
+              />
+            </div>
+          </div>
+          <div
+            className={`grid gap-3 ${gstEnabled ? "grid-cols-3" : "grid-cols-2"}`}
+          >
+            <div className="grid gap-1.5">
+              <Label className="text-xs text-muted-foreground">Selling ₹</Label>
+              <Input
+                type="number"
+                inputMode="decimal"
+                value={sellingPrice}
+                onChange={(e) => setSellingPrice(e.target.value)}
+              />
+            </div>
+            {gstEnabled && (
+              <div className="grid gap-1.5">
+                <Label className="text-xs text-muted-foreground">GST %</Label>
+                <Input
+                  type="number"
+                  value={gstRate}
+                  onChange={(e) => setGstRate(e.target.value)}
+                />
+              </div>
+            )}
+            <div className="grid gap-1.5">
+              <Label className="text-xs text-muted-foreground">
+                Opening stock
+              </Label>
+              <Input
+                type="number"
+                value={openingStock}
+                onChange={(e) => setOpeningStock(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+          >
+            Cancel
+          </Button>
+          <Button onClick={submit} disabled={submitting}>
+            {submitting ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus className="h-4 w-4" />
+            )}
+            Add &amp; bill
+          </Button>
+      </DialogFooter>
+    </DialogContent>
   );
 }
 
