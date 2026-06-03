@@ -4,7 +4,8 @@ import { cookies } from "next/headers";
 import type { Role } from "./types";
 
 const SESSION_COOKIE = "rsms_session";
-const SESSION_TTL_DAYS = 7;
+// Desktop sessions persist across reboots until explicit logout. 1 year cookie.
+const SESSION_TTL_DAYS = 365;
 
 const secret = process.env.JWT_SECRET;
 if (!secret) {

@@ -38,7 +38,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RSMS — Retail Shop Management",
+  title: "Retailo — Retail Shop Management",
   description: "Simple, fast POS & inventory for Indian retail shops.",
 };
 

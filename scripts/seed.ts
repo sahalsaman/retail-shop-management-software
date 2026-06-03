@@ -22,6 +22,12 @@ import {
 const RESET = process.argv.includes("--reset");
 
 const DEMO = {
+  admin: {
+    name: "Platform Admin",
+    email: "admin@retailo.in",
+    phone: "9999999999",
+    password: "admin1234",
+  },
   owner: {
     name: "Sahal Hassan",
     email: "owner@demo.in",
@@ -150,6 +156,20 @@ async function main() {
     for (const c of collections) {
       await c.deleteMany({});
     }
+  }
+
+  console.log("→ Creating platform admin…");
+  let admin = await User.findOne({ email: DEMO.admin.email });
+  if (!admin) {
+    admin = await User.create({
+      name: DEMO.admin.name,
+      email: DEMO.admin.email,
+      phone: DEMO.admin.phone,
+      passwordHash: await bcrypt.hash(DEMO.admin.password, 10),
+      role: "ADMIN",
+      shopId: null,
+      branchId: null,
+    });
   }
 
   console.log("→ Creating owner & shop…");
@@ -440,6 +460,7 @@ async function main() {
   }
 
   console.log("\n✓ Seed complete.");
+  console.log("  Admin:    admin@retailo.in / admin1234");
   console.log("  Owner:    owner@demo.in / demo1234");
   console.log("  Cashier:  cashier@demo.in / demo1234");
   console.log(`  Shop:     ${shop.name}`);

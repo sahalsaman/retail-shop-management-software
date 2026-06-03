@@ -2,8 +2,6 @@ import "server-only";
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { getSessionFromCookies, type SessionPayload } from "./session";
-import { connectDB } from "./mongoose";
-import { User } from "@/models";
 import type { Role } from "./types";
 
 export const verifySession = cache(async (): Promise<SessionPayload> => {
@@ -14,34 +12,20 @@ export const verifySession = cache(async (): Promise<SessionPayload> => {
   return session;
 });
 
+// User identity lives in the cloud Mongo users collection. The JWT carries
+// everything DAL needs (userId, shopId, branchId, role, email, name) so we
+// never have to touch a DB here — keeping the dashboard usable on every page
+// load whether the cloud is reachable or not.
 export const getCurrentUser = cache(async () => {
   const session = await verifySession();
-  await connectDB();
-  const user = await User.findById(session.userId)
-    .select("_id name email role shopId branchId phone isActive")
-    .lean<{
-      _id: { toString(): string };
-      name: string;
-      email: string;
-      role: Role;
-      shopId: { toString(): string } | null;
-      branchId: { toString(): string } | null;
-      phone: string | null;
-      isActive: boolean;
-    } | null>();
-
-  if (!user || !user.isActive) {
-    redirect("/login");
-  }
-
   return {
-    id: user._id.toString(),
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    shopId: user.shopId ? user.shopId.toString() : null,
-    branchId: user.branchId ? user.branchId.toString() : null,
-    phone: user.phone,
+    id: session.userId,
+    name: session.name,
+    email: session.email,
+    role: session.role,
+    shopId: session.shopId,
+    branchId: session.branchId,
+    phone: null as string | null,
   };
 });
 

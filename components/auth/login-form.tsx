@@ -29,7 +29,9 @@ export function LoginForm() {
         return;
       }
       toast.success(`Welcome back, ${json.data.user.name}`);
-      router.push(params.get("from") || "/dashboard");
+      const landing =
+        json.data.user.role === "ADMIN" ? "/admin" : "/dashboard";
+      router.push(params.get("from") || landing);
       router.refresh();
     });
   }
@@ -82,7 +84,7 @@ export function LoginForm() {
       </Button>
 
       <p className="text-sm text-center text-muted-foreground">
-        New to RSMS?{" "}
+        New to RETAILO?{" "}
         <Link href="/signup" className="font-medium text-foreground hover:underline">
           Create an account
         </Link>

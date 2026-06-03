@@ -1,7 +1,5 @@
 import "server-only";
-import { Types } from "mongoose";
-import { connectDB } from "@/lib/mongoose";
-import { Product } from "@/models";
+import { getDb } from "@/lib/sqlite";
 
 export type ProductListItem = {
   id: string;
@@ -27,9 +25,7 @@ export type ProductListItem = {
   updatedAt: Date;
 };
 
-export type ProductDetail = ProductListItem & {
-  createdAt: Date;
-};
+export type ProductDetail = ProductListItem & { createdAt: Date };
 
 export type ProductListResult = {
   items: ProductListItem[];
@@ -47,108 +43,123 @@ export type ProductListFilters = {
   pageSize?: number;
 };
 
-type RawListDoc = {
-  _id: Types.ObjectId;
+type RawRow = {
+  id: string;
   name: string;
   sku: string;
   barcode: string | null;
-  hsnCode: string | null;
-  gstRate: number;
-  purchasePrice: number;
-  sellingPrice: number;
+  hsn_code: string | null;
+  gst_rate: number;
+  purchase_price: number;
+  selling_price: number;
   mrp: number | null;
   unit: string;
-  lowStockThreshold: number;
-  hasExpiry: boolean;
-  isActive: boolean;
-  images: string[];
+  low_stock_threshold: number;
+  has_expiry: number;
+  is_active: number;
+  images: string;
   description: string | null;
-  categoryId: { _id: Types.ObjectId; name: string } | null;
-  brandId: { _id: Types.ObjectId; name: string } | null;
-  updatedAt: Date;
+  category_id: string | null;
+  brand_id: string | null;
+  category_name: string | null;
+  brand_name: string | null;
+  updated_at: number;
+  created_at: number;
 };
 
-function toListItem(p: RawListDoc): ProductListItem {
+function rowToItem(r: RawRow): ProductListItem {
+  const images = JSON.parse(r.images || "[]") as string[];
   return {
-    id: String(p._id),
-    name: p.name,
-    sku: p.sku,
-    barcode: p.barcode ?? null,
-    hsnCode: p.hsnCode ?? null,
-    gstRate: p.gstRate ?? 0,
-    purchasePrice: p.purchasePrice,
-    sellingPrice: p.sellingPrice,
-    mrp: p.mrp ?? null,
-    unit: p.unit,
-    lowStockThreshold: p.lowStockThreshold,
-    hasExpiry: !!p.hasExpiry,
-    isActive: !!p.isActive,
-    category: p.categoryId
-      ? { id: String(p.categoryId._id), name: p.categoryId.name }
-      : null,
-    brand: p.brandId ? { id: String(p.brandId._id), name: p.brandId.name } : null,
-    imageUrl: p.images?.[0] ?? null,
-    images: p.images ?? [],
-    description: p.description ?? null,
-    categoryId: p.categoryId ? String(p.categoryId._id) : null,
-    brandId: p.brandId ? String(p.brandId._id) : null,
-    updatedAt: p.updatedAt,
+    id: r.id,
+    name: r.name,
+    sku: r.sku,
+    barcode: r.barcode,
+    hsnCode: r.hsn_code,
+    gstRate: r.gst_rate,
+    purchasePrice: r.purchase_price,
+    sellingPrice: r.selling_price,
+    mrp: r.mrp,
+    unit: r.unit,
+    lowStockThreshold: r.low_stock_threshold,
+    hasExpiry: !!r.has_expiry,
+    isActive: !!r.is_active,
+    category: r.category_id && r.category_name ? { id: r.category_id, name: r.category_name } : null,
+    brand: r.brand_id && r.brand_name ? { id: r.brand_id, name: r.brand_name } : null,
+    imageUrl: images[0] ?? null,
+    images,
+    description: r.description,
+    categoryId: r.category_id,
+    brandId: r.brand_id,
+    updatedAt: new Date(r.updated_at),
   };
 }
 
 export async function listProducts(
-  shopIdStr: string,
+  shopId: string,
   filters: ProductListFilters = {},
 ): Promise<ProductListResult> {
-  await connectDB();
-  const shopId = new Types.ObjectId(shopIdStr);
+  const db = getDb();
   const page = Math.max(1, filters.page ?? 1);
   const pageSize = Math.min(100, Math.max(5, filters.pageSize ?? 20));
 
-  const query: Record<string, unknown> = { shopId };
-  if (filters.status === "active") query.isActive = true;
-  else if (filters.status === "inactive") query.isActive = false;
-  if (filters.categoryId) query.categoryId = new Types.ObjectId(filters.categoryId);
-  if (filters.brandId) query.brandId = new Types.ObjectId(filters.brandId);
+  const where: string[] = ["p.shop_id = ?", "p.deleted_at IS NULL"];
+  const params: Array<string | number> = [shopId];
+
+  if (filters.status === "active") where.push("p.is_active = 1");
+  else if (filters.status === "inactive") where.push("p.is_active = 0");
+  if (filters.categoryId) {
+    where.push("p.category_id = ?");
+    params.push(filters.categoryId);
+  }
+  if (filters.brandId) {
+    where.push("p.brand_id = ?");
+    params.push(filters.brandId);
+  }
   if (filters.search?.trim()) {
-    const re = new RegExp(escapeRegex(filters.search.trim()), "i");
-    query.$or = [{ name: re }, { sku: re }, { barcode: re }];
+    const term = `%${filters.search.trim()}%`;
+    where.push("(p.name LIKE ? OR p.sku LIKE ? OR p.barcode LIKE ?)");
+    params.push(term, term, term);
   }
 
-  const [docs, total] = await Promise.all([
-    Product.find(query)
-      .sort({ updatedAt: -1 })
-      .skip((page - 1) * pageSize)
-      .limit(pageSize)
-      .populate("categoryId", "name")
-      .populate("brandId", "name")
-      .lean<RawListDoc[]>(),
-    Product.countDocuments(query),
-  ]);
+  const whereSql = `WHERE ${where.join(" AND ")}`;
+  const total = (db
+    .prepare(`SELECT COUNT(*) AS n FROM products p ${whereSql}`)
+    .get(...params) as { n: number }).n;
 
-  return {
-    items: docs.map(toListItem),
-    total,
-    page,
-    pageSize,
-  };
+  const rows = db
+    .prepare(
+      `SELECT p.id, p.name, p.sku, p.barcode, p.hsn_code, p.gst_rate, p.purchase_price,
+              p.selling_price, p.mrp, p.unit, p.low_stock_threshold, p.has_expiry,
+              p.is_active, p.images, p.description, p.category_id, p.brand_id,
+              p.updated_at, p.created_at,
+              c.name AS category_name, b.name AS brand_name
+       FROM products p
+       LEFT JOIN categories c ON c.id = p.category_id
+       LEFT JOIN brands b ON b.id = p.brand_id
+       ${whereSql}
+       ORDER BY p.updated_at DESC
+       LIMIT ? OFFSET ?`,
+    )
+    .all(...params, pageSize, (page - 1) * pageSize) as RawRow[];
+
+  return { items: rows.map(rowToItem), total, page, pageSize };
 }
 
-export async function getProduct(
-  shopIdStr: string,
-  productIdStr: string,
-): Promise<ProductDetail | null> {
-  await connectDB();
-  if (!Types.ObjectId.isValid(productIdStr)) return null;
-  const shopId = new Types.ObjectId(shopIdStr);
-  const doc = await Product.findOne({ _id: productIdStr, shopId })
-    .populate("categoryId", "name")
-    .populate("brandId", "name")
-    .lean<RawListDoc & { createdAt: Date }>();
-  if (!doc) return null;
-  return { ...toListItem(doc), createdAt: doc.createdAt };
-}
-
-function escapeRegex(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+export async function getProduct(shopId: string, productId: string): Promise<ProductDetail | null> {
+  const db = getDb();
+  const row = db
+    .prepare(
+      `SELECT p.id, p.name, p.sku, p.barcode, p.hsn_code, p.gst_rate, p.purchase_price,
+              p.selling_price, p.mrp, p.unit, p.low_stock_threshold, p.has_expiry,
+              p.is_active, p.images, p.description, p.category_id, p.brand_id,
+              p.updated_at, p.created_at,
+              c.name AS category_name, b.name AS brand_name
+       FROM products p
+       LEFT JOIN categories c ON c.id = p.category_id
+       LEFT JOIN brands b ON b.id = p.brand_id
+       WHERE p.id = ? AND p.shop_id = ? AND p.deleted_at IS NULL`,
+    )
+    .get(productId, shopId) as RawRow | undefined;
+  if (!row) return null;
+  return { ...rowToItem(row), createdAt: new Date(row.created_at) };
 }

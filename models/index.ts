@@ -13,3 +13,5 @@ export { Purchase } from "./Purchase";
 export { Expense, EXPENSE_CATEGORIES } from "./Expense";
 export { Payment, PAYMENT_TYPES } from "./Payment";
 export { Employee, EMPLOYEE_DESIGNATIONS } from "./Employee";
+export { Invite, INVITE_STATUS } from "./Invite";
+export type { InviteStatus } from "./Invite";

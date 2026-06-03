@@ -3,5 +3,6 @@ import { getSessionFromCookies } from "@/lib/session";
 
 export default async function Home() {
   const session = await getSessionFromCookies();
-  redirect(session?.userId ? "/dashboard" : "/login");
+  if (!session?.userId) redirect("/login");
+  redirect(session.role === "ADMIN" ? "/admin" : "/dashboard");
 }

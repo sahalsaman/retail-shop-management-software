@@ -237,7 +237,7 @@ export function ThermalReceipt({
               </div>
             )}
             <div style={{ textAlign: "center", marginTop: "2mm", color: "#444" }}>
-              Powered by RSMS
+              Powered by RETAILO
             </div>
           </article>
         ))}

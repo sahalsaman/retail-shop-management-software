@@ -34,7 +34,7 @@ export default async function DashboardLayout({
           <SidebarNav />
         </div>
         <div className="border-t border-sidebar-border px-5 py-3 text-xs text-sidebar-foreground/60">
-          RSMS · v0.1
+          RETAILO · v0.1
         </div>
       </aside>
       <div className="flex-1 flex flex-col min-w-0 gap-3 p-3">

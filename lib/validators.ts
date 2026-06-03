@@ -23,10 +23,35 @@ export const SignupSchema = z.object({
   branchName: z.string().trim().min(2, "Branch name is required").default("Main Branch"),
 });
 
+// Login accepts either an email or a username — the `email` column on User
+// is used as the canonical identifier either way (admins use short usernames,
+// shop owners use email).
 export const LoginSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Enter a valid email"),
+  email: z.string().trim().toLowerCase().min(1, "Enter your username or email"),
   password: z.string().min(1, "Password required"),
 });
+
+export const CreateInviteSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Enter a valid email"),
+  ownerName: z.string().trim().min(2, "Name must be at least 2 characters"),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian mobile number")
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
+  shopName: z.string().trim().min(2, "Shop name is required"),
+  shopType: z.enum(SHOP_TYPES),
+});
+
+export const AcceptInviteSchema = z.object({
+  token: z.string().min(10, "Invalid invite token"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  branchName: z.string().trim().min(2).default("Main Branch"),
+});
+
+export type CreateInviteInput = z.infer<typeof CreateInviteSchema>;
+export type AcceptInviteInput = z.infer<typeof AcceptInviteSchema>;
 
 export const ForgotPasswordSchema = z.object({
   email: z.string().trim().toLowerCase().email("Enter a valid email"),

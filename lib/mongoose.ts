@@ -1,9 +1,12 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI;
+// Cloud MongoDB. Used for:
+//   1. login auth (verifying user credentials against the central DB)
+//   2. background sync (push local writes / pull remote writes)
+// May be missing or unreachable — callers must handle the "no cloud" case.
 
-if (!MONGODB_URI) {
-  throw new Error("MONGODB_URI is not set in .env");
+function getUri(): string | null {
+  return process.env.CLOUD_MONGODB_URI || process.env.MONGODB_URI || null;
 }
 
 type MongooseCache = {
@@ -11,27 +14,37 @@ type MongooseCache = {
   promise: Promise<typeof mongoose> | null;
 };
 
-const globalForMongoose = globalThis as unknown as {
-  _mongoose?: MongooseCache;
-};
+const globalForMongoose = globalThis as unknown as { _mongoose?: MongooseCache };
+const cache: MongooseCache = globalForMongoose._mongoose ?? { conn: null, promise: null };
+if (!globalForMongoose._mongoose) globalForMongoose._mongoose = cache;
 
-const cache: MongooseCache =
-  globalForMongoose._mongoose ?? { conn: null, promise: null };
+const CLOUD_TIMEOUT_MS = 5000;
 
-if (!globalForMongoose._mongoose) {
-  globalForMongoose._mongoose = cache;
-}
-
-export async function connectDB(): Promise<typeof mongoose> {
+export async function connectCloudDB(): Promise<typeof mongoose | null> {
   if (cache.conn) return cache.conn;
-
+  const uri = getUri();
+  if (!uri) return null;
   if (!cache.promise) {
-    cache.promise = mongoose.connect(MONGODB_URI!, {
-      bufferCommands: false,
-      dbName: process.env.DB_NAME || undefined,
-    });
+    cache.promise = mongoose
+      .connect(uri, {
+        bufferCommands: false,
+        dbName: process.env.DB_NAME || undefined,
+        serverSelectionTimeoutMS: CLOUD_TIMEOUT_MS,
+        connectTimeoutMS: CLOUD_TIMEOUT_MS,
+      })
+      .catch((err) => {
+        cache.promise = null;
+        throw err;
+      });
   }
-
-  cache.conn = await cache.promise;
-  return cache.conn;
+  try {
+    cache.conn = await cache.promise;
+    return cache.conn;
+  } catch {
+    return null;
+  }
 }
+
+// Back-compat alias for the modules that haven't been migrated to SQLite yet.
+// They still call connectDB() — keep them working when the cloud is reachable.
+export const connectDB = connectCloudDB as () => Promise<typeof mongoose>;

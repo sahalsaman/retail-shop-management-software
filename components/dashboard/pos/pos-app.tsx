@@ -648,7 +648,7 @@ export function PosApp({
         {paymentMethod === "UPI" && (
           <UpiQrButton
             amount={totals.total}
-            payee={shopGstin ?? "RSMS"}
+            payee={shopGstin ?? "RETAILO"}
           />
         )}
 
@@ -1141,7 +1141,7 @@ function HeldDialog({
 
 function UpiQrButton({ amount, payee }: { amount: number; payee: string }) {
   const [open, setOpen] = useState(false);
-  const upi = `upi://pay?pa=${encodeURIComponent(payee.toLowerCase())}@upi&pn=${encodeURIComponent("RSMS")}&am=${amount.toFixed(2)}&cu=INR`;
+  const upi = `upi://pay?pa=${encodeURIComponent(payee.toLowerCase())}@upi&pn=${encodeURIComponent("RETAILO")}&am=${amount.toFixed(2)}&cu=INR`;
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger

@@ -8,7 +8,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="hidden lg:flex flex-col justify-between bg-primary text-primary-foreground p-10">
         <Link href="/" className="flex items-center gap-2 text-lg font-semibold">
           <Store className="h-5 w-5" />
-          RSMS
+          RETAILO
         </Link>
         <div className="space-y-3">
           <h2 className="text-3xl font-semibold leading-tight">
@@ -19,7 +19,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             electronics, fashion, stationery, hardware and mobile shops in India.
           </p>
         </div>
-        <p className="text-xs text-primary-foreground/60">© RSMS</p>
+        <p className="text-xs text-primary-foreground/60">© RETAILO</p>
       </div>
       <div className="flex flex-col">
         <div className="flex justify-end p-4">
