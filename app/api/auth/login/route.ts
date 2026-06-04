@@ -7,6 +7,7 @@ import { createSession } from "@/lib/session";
 import { fail, handleError, ok } from "@/lib/api";
 import { getDb, nowMs, pruneOtherShops, setMeta } from "@/lib/sqlite";
 import { startSyncLoop } from "@/lib/sync/tick";
+import { isDesktop } from "@/lib/runtime";
 import type { Role } from "@/lib/types";
 
 // Login always goes to cloud Mongo — credentials never live in local SQLite.
@@ -42,8 +43,9 @@ export async function POST(req: NextRequest) {
     const shopId = user.shopId ? user.shopId.toString() : null;
     const branchId = user.branchId ? user.branchId.toString() : null;
 
-    // Mirror shop + branches into SQLite for offline app context.
-    if (shopId) {
+    // Mirror shop + branches into SQLite for offline app context. Desktop only
+    // — the web build has no local SQLite store and talks to cloud Mongo live.
+    if (shopId && isDesktop()) {
       const db = getDb();
       const now = nowMs();
 
@@ -124,7 +126,7 @@ export async function POST(req: NextRequest) {
       name: user.name,
     });
 
-    startSyncLoop();
+    if (isDesktop()) startSyncLoop();
 
     return ok({
       user: { id: userId, name: user.name, email: user.email, role: user.role },

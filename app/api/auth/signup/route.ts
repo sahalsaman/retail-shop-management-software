@@ -7,6 +7,7 @@ import { createSession } from "@/lib/session";
 import { fail, handleError, ok } from "@/lib/api";
 import { getDb, nowMs, pruneOtherShops, setMeta } from "@/lib/sqlite";
 import { startSyncLoop } from "@/lib/sync/tick";
+import { isDesktop } from "@/lib/runtime";
 
 export async function POST(req: NextRequest) {
   try {
@@ -60,25 +61,28 @@ export async function POST(req: NextRequest) {
     const shopId = shop._id.toString();
     const branchId = branch._id.toString();
 
-    // Mirror shop + branch into SQLite for offline app context. User record
-    // stays cloud-only — credentials are never persisted locally.
-    const db = getDb();
-    const now = nowMs();
+    // Mirror shop + branch into SQLite for offline app context. Desktop only —
+    // the web build has no local SQLite store. User record stays cloud-only;
+    // credentials are never persisted locally.
+    if (isDesktop()) {
+      const db = getDb();
+      const now = nowMs();
 
-    pruneOtherShops(shopId);
-    setMeta("active_user_id", userId);
-    setMeta("active_shop_id", shopId);
+      pruneOtherShops(shopId);
+      setMeta("active_user_id", userId);
+      setMeta("active_shop_id", shopId);
 
-    db.prepare(
-      `INSERT INTO shops (id, name, gstin, state_code, gst_enabled, printer_enabled, updated_at, dirty)
-       VALUES (?, ?, NULL, NULL, 1, 0, ?, 0)
-       ON CONFLICT(id) DO UPDATE SET name = excluded.name, updated_at = excluded.updated_at, dirty = 0`,
-    ).run(shopId, shop.name, now);
-    db.prepare(
-      `INSERT INTO branches (id, shop_id, name, address, phone, is_active, is_default, updated_at, dirty)
-       VALUES (?, ?, ?, NULL, ?, 1, 1, ?, 0)
-       ON CONFLICT(id) DO UPDATE SET name = excluded.name, updated_at = excluded.updated_at, dirty = 0`,
-    ).run(branchId, shopId, branch.name, input.phone ?? null, now);
+      db.prepare(
+        `INSERT INTO shops (id, name, gstin, state_code, gst_enabled, printer_enabled, updated_at, dirty)
+         VALUES (?, ?, NULL, NULL, 1, 0, ?, 0)
+         ON CONFLICT(id) DO UPDATE SET name = excluded.name, updated_at = excluded.updated_at, dirty = 0`,
+      ).run(shopId, shop.name, now);
+      db.prepare(
+        `INSERT INTO branches (id, shop_id, name, address, phone, is_active, is_default, updated_at, dirty)
+         VALUES (?, ?, ?, NULL, ?, 1, 1, ?, 0)
+         ON CONFLICT(id) DO UPDATE SET name = excluded.name, updated_at = excluded.updated_at, dirty = 0`,
+      ).run(branchId, shopId, branch.name, input.phone ?? null, now);
+    }
 
     await createSession({
       userId,
@@ -89,7 +93,7 @@ export async function POST(req: NextRequest) {
       name: user.name,
     });
 
-    startSyncLoop();
+    if (isDesktop()) startSyncLoop();
 
     return ok({
       user: { id: userId, name: user.name, email: user.email, role: "OWNER" },

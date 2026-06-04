@@ -1,75 +1,27 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 import { getDb, newId, nowMs } from "@/lib/sqlite";
 import { enqueueOutbox } from "@/lib/sync/outbox";
 import { ProductSchema } from "@/lib/validators";
 import { getCurrentUser } from "@/lib/dal";
+import { isDesktop } from "@/lib/runtime";
+import {
+  QuickAddSchema,
+  readForm,
+  type ActionResult,
+  type QuickAddInput,
+  type QuickAddResult,
+} from "./products-shared";
+import {
+  createProductCloud,
+  deleteProductCloud,
+  quickAddProductCloud,
+  toggleProductActiveCloud,
+  updateProductCloud,
+} from "./products.cloud";
 
-export type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
-
-export type QuickAddProduct = {
-  id: string;
-  name: string;
-  sku: string;
-  barcode: string | null;
-  unit: string;
-  gstRate: number;
-  sellingPrice: number;
-  mrp: number | null;
-  stock: number;
-};
-
-export type QuickAddResult =
-  | { ok: true; product: QuickAddProduct }
-  | { ok: false; error: string };
-
-const QuickAddSchema = z.object({
-  name: z.string().trim().min(1, "Name is required").max(160),
-  sku: z
-    .string()
-    .trim()
-    .max(40)
-    .regex(/^[A-Za-z0-9._-]*$/, "Letters, numbers, dot, dash, underscore only")
-    .optional()
-    .transform((s) => (s ? s.toUpperCase() : "")),
-  unit: z
-    .string()
-    .trim()
-    .min(1)
-    .max(10)
-    .default("PCS")
-    .transform((s) => s.toUpperCase()),
-  sellingPrice: z.coerce.number().min(0, "Cannot be negative"),
-  gstRate: z.coerce.number().min(0).max(100).default(0),
-  openingStock: z.coerce.number().int().min(0).default(0),
-  branchId: z.string().min(1, "Invalid branch"),
-});
-
-function readForm(form: FormData) {
-  return {
-    name: String(form.get("name") ?? ""),
-    sku: String(form.get("sku") ?? ""),
-    barcode: String(form.get("barcode") ?? ""),
-    categoryId: String(form.get("categoryId") ?? ""),
-    brandId: String(form.get("brandId") ?? ""),
-    hsnCode: String(form.get("hsnCode") ?? ""),
-    gstRate: String(form.get("gstRate") ?? "0"),
-    purchasePrice: String(form.get("purchasePrice") ?? "0"),
-    sellingPrice: String(form.get("sellingPrice") ?? "0"),
-    mrp: String(form.get("mrp") ?? ""),
-    unit: String(form.get("unit") ?? "PCS"),
-    images: String(form.get("images") ?? "")
-      .split("\n")
-      .map((s) => s.trim())
-      .filter(Boolean),
-    lowStockThreshold: String(form.get("lowStockThreshold") ?? "5"),
-    hasExpiry: form.get("hasExpiry") === "on" || form.get("hasExpiry") === "true",
-    isActive: form.get("isActive") !== "off" && form.get("isActive") !== "false",
-    description: String(form.get("description") ?? ""),
-  };
-}
+export type { ActionResult, QuickAddProduct, QuickAddResult } from "./products-shared";
 
 // Maps the SQLite row back into the cloud Mongo shape that lib/sync/pull.ts and
 // the existing Mongoose models expect. Outbox push uses this payload as-is.
@@ -104,6 +56,8 @@ function readById(id: string): Record<string, unknown> | undefined {
 }
 
 export async function createProduct(form: FormData): Promise<ActionResult> {
+  if (!isDesktop()) return createProductCloud(form);
+
   const user = await getCurrentUser();
   if (!user.shopId) return { ok: false, error: "No shop" };
 
@@ -159,6 +113,8 @@ export async function createProduct(form: FormData): Promise<ActionResult> {
 }
 
 export async function updateProduct(id: string, form: FormData): Promise<ActionResult> {
+  if (!isDesktop()) return updateProductCloud(id, form);
+
   const user = await getCurrentUser();
   if (!user.shopId) return { ok: false, error: "No shop" };
 
@@ -217,6 +173,8 @@ export async function updateProduct(id: string, form: FormData): Promise<ActionR
 }
 
 export async function deleteProduct(id: string): Promise<ActionResult> {
+  if (!isDesktop()) return deleteProductCloud(id);
+
   const user = await getCurrentUser();
   if (!user.shopId) return { ok: false, error: "No shop" };
   const db = getDb();
@@ -235,6 +193,8 @@ export async function deleteProduct(id: string): Promise<ActionResult> {
 }
 
 export async function toggleProductActive(id: string, active: boolean): Promise<ActionResult> {
+  if (!isDesktop()) return toggleProductActiveCloud(id, active);
+
   const user = await getCurrentUser();
   if (!user.shopId) return { ok: false, error: "No shop" };
   const db = getDb();
@@ -258,6 +218,8 @@ export async function quickAddProductFromPos(input: {
   openingStock?: number | string;
   branchId: string;
 }): Promise<QuickAddResult> {
+  if (!isDesktop()) return quickAddProductCloud(input as QuickAddInput);
+
   const user = await getCurrentUser();
   if (!user.shopId) return { ok: false, error: "No shop" };
 

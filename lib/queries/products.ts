@@ -1,5 +1,7 @@
 import "server-only";
 import { getDb } from "@/lib/sqlite";
+import { isDesktop } from "@/lib/runtime";
+import { getProductCloud, listProductsCloud } from "./products.cloud";
 
 export type ProductListItem = {
   id: string;
@@ -98,6 +100,9 @@ export async function listProducts(
   shopId: string,
   filters: ProductListFilters = {},
 ): Promise<ProductListResult> {
+  // Web build has no local SQLite — read straight from cloud Mongo.
+  if (!isDesktop()) return listProductsCloud(shopId, filters);
+
   const db = getDb();
   const page = Math.max(1, filters.page ?? 1);
   const pageSize = Math.min(100, Math.max(5, filters.pageSize ?? 20));
@@ -146,6 +151,8 @@ export async function listProducts(
 }
 
 export async function getProduct(shopId: string, productId: string): Promise<ProductDetail | null> {
+  if (!isDesktop()) return getProductCloud(shopId, productId);
+
   const db = getDb();
   const row = db
     .prepare(
