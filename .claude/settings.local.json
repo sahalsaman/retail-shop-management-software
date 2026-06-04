@@ -45,7 +45,12 @@
       "Bash(ls lib/sync/ lib/queries/ lib/actions/)",
       "Bash(ls electron/)",
       "Bash(ls app/accept-invite)",
-      "Bash(ls *.md ELECTRON.md)"
+      "Bash(ls *.md ELECTRON.md)",
+      "Bash(rm -f cj.txt)",
+      "Bash(curl -s -i -c cj.txt -X POST http://127.0.0.1:3000/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"owner@demo.in\",\"password\":\"demo1234\"}')",
+      "Bash(awk '{print $7}')",
+      "Bash(sed 's/.\\\\{20\\\\}$/...\\(truncated\\)/')",
+      "Bash(curl -s -i -b cj.txt -c cj.txt -X POST http://127.0.0.1:3000/api/auth/logout)"
     ]
   }
 }
