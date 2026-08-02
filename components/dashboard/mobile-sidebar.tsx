@@ -27,7 +27,7 @@ export function MobileSidebar({
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
         render={
-          <Button variant="ghost" size="icon" className="lg:hidden">
+          <Button variant="ghost" size="icon" className="hidden sm:inline-flex lg:hidden">
             <Menu className="h-5 w-5" />
           </Button>
         }

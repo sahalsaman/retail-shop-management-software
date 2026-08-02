@@ -4,6 +4,7 @@ import { SidebarNav } from "@/components/dashboard/sidebar-nav";
 import { UserMenu } from "@/components/dashboard/user-menu";
 import { MobileSidebar } from "@/components/dashboard/mobile-sidebar";
 import { HeaderSearch } from "@/components/dashboard/header-search";
+import { BottomNavigation } from "@/components/dashboard/bottom-navigation";
 
 export default async function DashboardLayout({
   children,
@@ -16,7 +17,7 @@ export default async function DashboardLayout({
   const shopName = user.shopName?.trim() || "Your Shop";
 
   return (
-    <div className="min-h-screen flex gap-3 bg-background text-foreground">
+    <div className="min-h-dvh flex gap-3 bg-background text-foreground">
       <aside className="hidden lg:flex sticky top-0 self-start h-dvh w-64 flex-col bg-sidebar text-sidebar-foreground shrink-0 overflow-hidden shadow-sm">
         <div className="flex items-center gap-2.5 px-5 h-16 border-b border-sidebar-border">
           <span className="grid place-items-center h-9 w-9 rounded-xl bg-gray-800 text-primary-foreground shadow-sm">
@@ -31,8 +32,8 @@ export default async function DashboardLayout({
           RETAILO · v0.1
         </div>
       </aside>
-      <div className="flex-1 flex flex-col min-w-0 gap-3 p-3">
-        <header className="sticky top-3 z-30 h-16 rounded-2xl border bg-muted text-foreground flex items-center justify-between px-3 sm:px-4 gap-2">
+      <div className="flex-1 flex flex-col min-w-0 gap-2 sm:gap-3 p-0 sm:p-3 pb-20 lg:pb-3">
+        <header className="sticky top-0 sm:top-3 z-30 h-14 sm:h-16 rounded-none sm:rounded-2xl border-b sm:border bg-muted text-foreground flex items-center justify-between px-2.5 sm:px-4 gap-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <MobileSidebar
               shopName={shopName}
@@ -43,9 +44,14 @@ export default async function DashboardLayout({
           </div>
           <UserMenu name={user.name} email={user.email} role={user.role} />
         </header>
-        <main className="flex-1 rounded-2xl border bg-card text-card-foreground shadow-sm p-5 sm:p-7 lg:p-8 overflow-y-auto">
+        <main className="flex-1 rounded-none sm:rounded-2xl border-0 sm:border bg-card text-card-foreground shadow-sm p-3 sm:p-7 lg:p-8 overflow-y-auto">
           {children}
         </main>
+        <BottomNavigation
+          shopName={shopName}
+          role={user.role}
+          pageAccess={user.pageAccess}
+        />
       </div>
     </div>
   );

@@ -78,8 +78,8 @@ export default async function DashboardPage() {
     <div className="space-y-6">
       <div className="flex items-end justify-between flex-wrap gap-2">
         <div>
-          <h1 className="text-2xl font-semibold">Welcome back, {user.name.split(" ")[0]}</h1>
-          <p className="text-sm text-muted-foreground">Here&apos;s what&apos;s happening today.</p>
+          <h1 className="text-2xl font-semibold">KC Bazar</h1>
+          {/* <p className="text-sm text-muted-foreground">Here&apos;s what&apos;s happening today.</p> */}
         </div>
         <Button nativeButton={false} render={<Link href="/dashboard/pos" />}>
           <ShoppingCart className="h-4 w-4" />

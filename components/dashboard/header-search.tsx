@@ -52,14 +52,11 @@ export function HeaderSearch() {
   useEffect(() => {
     const term = query.trim();
     if (!term) {
-      setProducts([]);
-      setCustomers([]);
-      setLoading(false);
       return;
     }
     const ctrl = new AbortController();
-    setLoading(true);
     const t = setTimeout(async () => {
+      setLoading(true);
       try {
         const res = await fetch(
           `/api/search?q=${encodeURIComponent(term)}&limit=5`,
@@ -117,6 +114,9 @@ export function HeaderSearch() {
   function navigate(hit: FlatHit) {
     setOpen(false);
     setQuery("");
+    setProducts([]);
+    setCustomers([]);
+    setLoading(false);
     if (hit.kind === "product") {
       router.push(`/dashboard/products?q=${encodeURIComponent(hit.data.sku)}`);
     } else {
@@ -152,12 +152,18 @@ export function HeaderSearch() {
       <Input
         ref={inputRef}
         type="search"
-        placeholder="Search products, customers…  (press /)"
-        className="h-10 pl-9 pr-9 bg-card border-transparent shadow-sm focus-visible:border-ring"
+        placeholder="Search..."
+        className="h-10 pl-9 pr-9 bg-card border-transparent shadow-sm focus-visible:border-ring text-sm"
         value={query}
         onChange={(e) => {
-          setQuery(e.target.value);
+          const next = e.target.value;
+          setQuery(next);
           setOpen(true);
+          if (!next.trim()) {
+            setProducts([]);
+            setCustomers([]);
+            setLoading(false);
+          }
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={onKeyDown}

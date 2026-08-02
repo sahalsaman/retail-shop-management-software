@@ -28,8 +28,8 @@ type NavItem = {
   exact?: boolean;
 };
 
-const ITEMS: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard", exact: true },
+export const DASHBOARD_NAV_ITEMS: NavItem[] = [
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard, permission: "dashboard", exact: true },
   { href: "/dashboard/pos", label: "POS Billing", icon: ShoppingCart, permission: "pos" },
   { href: "/dashboard/products", label: "Products", icon: Package, permission: "products" },
   { href: "/dashboard/inventory", label: "Inventory", icon: Boxes, permission: "inventory" },
@@ -54,7 +54,7 @@ export function SidebarNav({
   const allowed = normalizePageAccess(role, pageAccess);
   return (
     <nav className="flex flex-col gap-0.5 px-2 py-2">
-      {ITEMS.filter((item) => allowed.includes(item.permission)).map((item) => {
+      {DASHBOARD_NAV_ITEMS.filter((item) => allowed.includes(item.permission)).map((item) => {
         const Icon = item.icon;
         const active = item.exact
           ? pathname === item.href
