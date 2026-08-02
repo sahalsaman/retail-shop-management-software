@@ -6,6 +6,7 @@ import {
   BarChart3,
   Boxes,
   Building2,
+  CalendarDays,
   FileText,
   LayoutDashboard,
   Package,
@@ -30,6 +31,7 @@ type NavItem = {
 
 export const DASHBOARD_NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard, permission: "dashboard", exact: true },
+  { href: "/dashboard/calendar", label: "Calendar", icon: CalendarDays, permission: "calendar" },
   { href: "/dashboard/pos", label: "POS Billing", icon: ShoppingCart, permission: "pos" },
   { href: "/dashboard/products", label: "Products", icon: Package, permission: "products" },
   { href: "/dashboard/inventory", label: "Inventory", icon: Boxes, permission: "inventory" },

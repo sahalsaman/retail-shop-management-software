@@ -308,7 +308,11 @@ function Stat({
   );
 }
 
-function DailyBars({ data }: { data: Array<{ date: string; total: number; bills: number }> }) {
+function DailyBars({
+  data,
+}: {
+  data: Array<{ date: string; billed: number; manual: number; total: number; bills: number }>;
+}) {
   if (data.length === 0) {
     return <p className="text-sm text-muted-foreground py-6 text-center">No sales in range.</p>;
   }
@@ -324,7 +328,7 @@ function DailyBars({ data }: { data: Array<{ date: string; total: number; bills:
             <div
               className="w-full bg-primary/80 rounded-sm"
               style={{ height: `${h}%` }}
-              title={`${label}: ${formatINR(d.total)} (${d.bills} bills)`}
+              title={`${label}: ${formatINR(d.total)} (${d.bills} bills, ${formatINR(d.manual)} manual)`}
             />
             <span className="text-[10px] text-muted-foreground truncate">{label}</span>
           </div>

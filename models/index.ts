@@ -9,6 +9,7 @@ export { StockMovement } from "./StockMovement";
 export { Customer } from "./Customer";
 export { Supplier } from "./Supplier";
 export { Sale } from "./Sale";
+export { ManualDailySale } from "./ManualDailySale";
 export { Purchase } from "./Purchase";
 export { Expense, EXPENSE_CATEGORIES } from "./Expense";
 export { Payment, PAYMENT_TYPES } from "./Payment";

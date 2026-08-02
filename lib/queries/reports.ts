@@ -1,7 +1,7 @@
 import "server-only";
 import { Types } from "mongoose";
 import { connectDB } from "@/lib/mongoose";
-import { Sale, Expense, Inventory, Purchase } from "@/models";
+import { Sale, Expense, Inventory, Purchase, ManualDailySale } from "@/models";
 
 export type DateRange = { from: Date; to: Date };
 
@@ -11,8 +11,12 @@ export type SalesReport = {
   totalDiscount: number;
   totalBills: number;
   byMethod: Array<{ method: string; total: number; count: number }>;
-  byDay: Array<{ date: string; total: number; bills: number }>;
+  byDay: Array<{ date: string; billed: number; manual: number; total: number; bills: number }>;
 };
+
+function dateKey(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 export async function buildSalesReport(
   shopIdStr: string,
@@ -25,7 +29,10 @@ export async function buildSalesReport(
     status: "COMPLETED",
     createdAt: { $gte: range.from, $lte: range.to },
   };
-  const [headline, byMethod, byDay] = await Promise.all([
+  const fromKey = dateKey(range.from);
+  const toKey = dateKey(range.to);
+
+  const [headline, byMethod, manualHeadline, byDay, manualByDay] = await Promise.all([
     Sale.aggregate<{
       revenue: number;
       tax: number;
@@ -48,6 +55,10 @@ export async function buildSalesReport(
       { $group: { _id: "$paymentMethod", total: { $sum: "$total" }, count: { $sum: 1 } } },
       { $sort: { total: -1 } },
     ]),
+    ManualDailySale.aggregate<{ total: number; count: number }>([
+      { $match: { shopId, dateKey: { $gte: fromKey, $lte: toKey } } },
+      { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } },
+    ]),
     Sale.aggregate<{ _id: string; total: number; bills: number }>([
       { $match: match },
       {
@@ -65,19 +76,53 @@ export async function buildSalesReport(
       },
       { $sort: { _id: 1 } },
     ]),
+    ManualDailySale.aggregate<{ _id: string; total: number }>([
+      { $match: { shopId, dateKey: { $gte: fromKey, $lte: toKey } } },
+      { $group: { _id: "$dateKey", total: { $sum: "$amount" } } },
+      { $sort: { _id: 1 } },
+    ]),
   ]);
 
+  const daily = new Map<string, { date: string; billed: number; manual: number; total: number; bills: number }>();
+  byDay.forEach((d) => {
+    daily.set(d._id, {
+      date: d._id,
+      billed: d.total,
+      manual: 0,
+      total: d.total,
+      bills: d.bills,
+    });
+  });
+  manualByDay.forEach((d) => {
+    const existing = daily.get(d._id) ?? {
+      date: d._id,
+      billed: 0,
+      manual: 0,
+      total: 0,
+      bills: 0,
+    };
+    existing.manual += d.total;
+    existing.total = existing.billed + existing.manual;
+    daily.set(d._id, existing);
+  });
+
+  const manualTotal = manualHeadline[0]?.total ?? 0;
+  const manualCount = manualHeadline[0]?.count ?? 0;
+
   return {
-    totalRevenue: headline[0]?.revenue ?? 0,
+    totalRevenue: (headline[0]?.revenue ?? 0) + manualTotal,
     totalTax: headline[0]?.tax ?? 0,
     totalDiscount: headline[0]?.discount ?? 0,
     totalBills: headline[0]?.bills ?? 0,
-    byMethod: byMethod.map((m) => ({
-      method: m._id,
-      total: m.total,
-      count: m.count,
-    })),
-    byDay: byDay.map((d) => ({ date: d._id, total: d.total, bills: d.bills })),
+    byMethod: [
+      ...byMethod.map((m) => ({
+        method: m._id,
+        total: m.total,
+        count: m.count,
+      })),
+      ...(manualCount > 0 ? [{ method: "MANUAL", total: manualTotal, count: manualCount }] : []),
+    ],
+    byDay: Array.from(daily.values()).sort((a, b) => a.date.localeCompare(b.date)),
   };
 }
 
@@ -97,7 +142,10 @@ export async function buildProfitReport(
   await connectDB();
   const shopId = new Types.ObjectId(shopIdStr);
 
-  const [salesAgg, expenseAgg, purchaseAgg] = await Promise.all([
+  const fromKey = dateKey(range.from);
+  const toKey = dateKey(range.to);
+
+  const [salesAgg, manualSalesAgg, expenseAgg, purchaseAgg] = await Promise.all([
     Sale.aggregate<{ revenue: number; cogs: number }>([
       {
         $match: {
@@ -128,6 +176,10 @@ export async function buildProfitReport(
         },
       },
     ]),
+    ManualDailySale.aggregate<{ total: number }>([
+      { $match: { shopId, dateKey: { $gte: fromKey, $lte: toKey } } },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
+    ]),
     Expense.aggregate<{ total: number }>([
       {
         $match: {
@@ -148,7 +200,7 @@ export async function buildProfitReport(
     ]),
   ]);
 
-  const revenue = salesAgg[0]?.revenue ?? 0;
+  const revenue = (salesAgg[0]?.revenue ?? 0) + (manualSalesAgg[0]?.total ?? 0);
   const cogs = salesAgg[0]?.cogs ?? 0;
   const expenses = expenseAgg[0]?.total ?? 0;
   const purchases = purchaseAgg[0]?.total ?? 0;

@@ -32,6 +32,7 @@ export async function createExpense(form: FormData): Promise<ActionResult> {
     createdBy: user.id,
   });
   revalidatePath("/dashboard/expenses");
+  revalidatePath("/dashboard/calendar");
   revalidatePath("/dashboard/reports");
   return { ok: true, id: String(doc._id) };
 }
@@ -43,6 +44,7 @@ export async function deleteExpense(id: string): Promise<ActionResult> {
   await connectDB();
   await Expense.deleteOne({ _id: id, shopId: user.shopId });
   revalidatePath("/dashboard/expenses");
+  revalidatePath("/dashboard/calendar");
   revalidatePath("/dashboard/reports");
   return { ok: true };
 }

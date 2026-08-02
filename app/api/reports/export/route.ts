@@ -24,10 +24,18 @@ export async function GET(req: Request) {
   if (type === "sales") {
     const r = await buildSalesReport(user.shopId, range);
     const csv = toCSV(
-      r.byDay.map((d) => ({ date: d.date, bills: d.bills, total: d.total })),
+      r.byDay.map((d) => ({
+        date: d.date,
+        bills: d.bills,
+        billed: d.billed,
+        manual: d.manual,
+        total: d.total,
+      })),
       [
         { key: "date", header: "Date" },
         { key: "bills", header: "Bills" },
+        { key: "billed", header: "Billed Sales ₹" },
+        { key: "manual", header: "Manual Sales ₹" },
         { key: "total", header: "Total ₹" },
       ],
     );

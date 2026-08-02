@@ -17,7 +17,7 @@ import { normalizePageAccess } from "@/lib/permissions";
 import type { Role } from "@/lib/types";
 import { DASHBOARD_NAV_ITEMS, SidebarNav } from "./sidebar-nav";
 
-const PRIMARY_KEYS = ["dashboard", "pos", "products", "invoices"] as const;
+const PRIMARY_KEYS = ["dashboard", "calendar", "pos", "invoices"] as const;
 
 export function BottomNavigation({
   shopName,

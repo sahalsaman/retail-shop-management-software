@@ -34,7 +34,15 @@ const CATEGORIES = [
   ["OTHER", "Other"],
 ] as const;
 
-export function ExpenseFormDialog({ branches }: { branches: BranchListItem[] }) {
+export function ExpenseFormDialog({
+  branches,
+  triggerLabel = "New expense",
+  defaultDate,
+}: {
+  branches: BranchListItem[];
+  triggerLabel?: string;
+  defaultDate?: string;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
@@ -60,7 +68,7 @@ export function ExpenseFormDialog({ branches }: { branches: BranchListItem[] }) 
         render={
           <Button>
             <Plus className="h-4 w-4" />
-            New expense
+            {triggerLabel}
           </Button>
         }
       />
@@ -111,7 +119,11 @@ export function ExpenseFormDialog({ branches }: { branches: BranchListItem[] }) 
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Date</Label>
-            <Input name="date" type="date" defaultValue={new Date().toISOString().slice(0, 10)} />
+            <Input
+              name="date"
+              type="date"
+              defaultValue={defaultDate ?? new Date().toISOString().slice(0, 10)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Note</Label>

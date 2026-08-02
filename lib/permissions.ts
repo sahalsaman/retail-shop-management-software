@@ -2,6 +2,7 @@ import type { Role } from "@/lib/types";
 
 export const DASHBOARD_PAGE_PERMISSIONS = [
   { key: "dashboard", label: "Dashboard", href: "/dashboard", exact: true },
+  { key: "calendar", label: "Calendar", href: "/dashboard/calendar" },
   { key: "pos", label: "POS Billing", href: "/dashboard/pos" },
   { key: "products", label: "Products", href: "/dashboard/products" },
   { key: "inventory", label: "Inventory", href: "/dashboard/inventory" },
@@ -27,6 +28,7 @@ export const DEFAULT_ROLE_PAGE_ACCESS: Record<Role, DashboardPagePermission[]> =
   OWNER: [...ALL_DASHBOARD_PAGE_PERMISSIONS],
   MANAGER: [
     "dashboard",
+    "calendar",
     "pos",
     "products",
     "inventory",
@@ -37,8 +39,8 @@ export const DEFAULT_ROLE_PAGE_ACCESS: Record<Role, DashboardPagePermission[]> =
     "expenses",
     "reports",
   ],
-  CASHIER: ["dashboard", "pos", "customers", "invoices"],
-  SALES_EXECUTIVE: ["dashboard", "pos", "products", "customers", "invoices"],
+  CASHIER: ["dashboard", "calendar", "pos", "customers", "invoices"],
+  SALES_EXECUTIVE: ["dashboard", "calendar", "pos", "products", "customers", "invoices"],
 };
 
 export function normalizePageAccess(
