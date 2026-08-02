@@ -14,6 +14,10 @@ export type EmployeeListItem = {
   branchId: string | null;
   joinedAt: Date;
   notes: string | null;
+  canLogin: boolean;
+  username: string | null;
+  loginRole: string;
+  pageAccess: string[];
   isActive: boolean;
   totalPaid: number;
   lastPaidAt: Date | null;
@@ -38,6 +42,10 @@ export async function listEmployees(
         monthlySalary: number;
         joinedAt: Date;
         notes: string | null;
+        canLogin: boolean | null;
+        username: string | null;
+        loginRole: string | null;
+        pageAccess: string[] | null;
         isActive: boolean;
         branchId: { _id: Types.ObjectId; name: string } | null;
       }>
@@ -81,6 +89,10 @@ export async function listEmployees(
       branchId: d.branchId ? String(d.branchId._id) : null,
       joinedAt: d.joinedAt,
       notes: d.notes,
+      canLogin: !!d.canLogin,
+      username: d.username,
+      loginRole: d.loginRole ?? "CASHIER",
+      pageAccess: d.pageAccess ?? [],
       isActive: d.isActive,
       totalPaid: s?.total ?? 0,
       lastPaidAt: s?.last ?? null,
@@ -107,6 +119,10 @@ export async function getEmployeeWithSalaryHistory(
       monthlySalary: number;
       joinedAt: Date;
       notes: string | null;
+      canLogin: boolean | null;
+      username: string | null;
+      loginRole: string | null;
+      pageAccess: string[] | null;
       isActive: boolean;
       branchId: { _id: Types.ObjectId; name: string } | null;
     } | null>();
@@ -140,6 +156,10 @@ export async function getEmployeeWithSalaryHistory(
       branchId: emp.branchId ? String(emp.branchId._id) : null,
       joinedAt: emp.joinedAt,
       notes: emp.notes,
+      canLogin: !!emp.canLogin,
+      username: emp.username,
+      loginRole: emp.loginRole ?? "CASHIER",
+      pageAccess: emp.pageAccess ?? [],
       isActive: emp.isActive,
     },
     salaryHistory: history.map((h) => ({

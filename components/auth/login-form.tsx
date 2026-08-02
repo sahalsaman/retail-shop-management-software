@@ -47,15 +47,15 @@ export function LoginForm() {
 
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">Username or email</Label>
           <Input
             id="email"
-            type="email"
-            autoComplete="email"
+            type="text"
+            autoComplete="username"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@shop.com"
+            placeholder="cashier1 or you@shop.com"
           />
         </div>
         <div className="space-y-2">

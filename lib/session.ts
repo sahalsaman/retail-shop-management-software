@@ -20,6 +20,11 @@ export type SessionPayload = JWTPayload & {
   role: Role;
   email: string;
   name: string;
+  // Shop display name baked into the token so the dashboard shell never has to
+  // hit the DB on every navigation. May be absent on tokens issued before this
+  // field existed — callers fall back to a default.
+  shopName?: string | null;
+  pageAccess?: string[];
 };
 
 export async function encrypt(payload: SessionPayload): Promise<string> {

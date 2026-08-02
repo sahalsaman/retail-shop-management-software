@@ -1,7 +1,7 @@
 import { Users, AlertCircle } from "lucide-react";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/dal";
-import { getShopSettings } from "@/lib/queries/shop";
+import { getShopSettings, type ShopSettings } from "@/lib/queries/shop";
 import { listBranches } from "@/lib/queries/branches";
 import { listEmployees } from "@/lib/queries/employees";
 import { Badge } from "@/components/ui/badge";
@@ -35,8 +35,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: SP 
     | "printer"
     | "employees";
 
-  const shop = await getShopSettings(user.shopId);
-  if (!shop) redirect("/dashboard");
+  const shop = (await getShopSettings(user.shopId)) ?? fallbackShopSettings(user.shopId, user.shopName);
 
   return (
     <div className="space-y-5">
@@ -55,6 +54,30 @@ export default async function SettingsPage({ searchParams }: { searchParams: SP 
       {section === "employees" && <EmployeesSection shopId={user.shopId} />}
     </div>
   );
+}
+
+function fallbackShopSettings(shopId: string, shopName: string | null): ShopSettings {
+  return {
+    id: shopId,
+    name: shopName?.trim() || "Your Shop",
+    type: "OTHER",
+    gstin: null,
+    gstEnabled: true,
+    address: null,
+    phone: null,
+    email: null,
+    currency: "INR",
+    locale: "en-IN",
+    isActive: true,
+    printer: {
+      enabled: false,
+      paperWidth: "80mm",
+      header: null,
+      footer: null,
+      copies: 1,
+      autoPrint: true,
+    },
+  };
 }
 
 async function EmployeesSection({ shopId }: { shopId: string }) {
@@ -94,6 +117,7 @@ async function EmployeesSection({ shopId }: { shopId: string }) {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Designation</TableHead>
+                <TableHead>App access</TableHead>
                 <TableHead>Branch</TableHead>
                 <TableHead className="text-right">Monthly ₹</TableHead>
                 <TableHead className="text-right">Paid total</TableHead>
@@ -119,6 +143,18 @@ async function EmployeesSection({ shopId }: { shopId: string }) {
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {e.designation}
+                  </TableCell>
+                  <TableCell>
+                    {e.canLogin ? (
+                      <div className="space-y-1">
+                        <Badge variant="secondary">{e.loginRole}</Badge>
+                        <div className="text-xs text-muted-foreground font-mono">
+                          {e.username}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {e.branchName ?? "—"}

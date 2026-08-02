@@ -1,7 +1,5 @@
 import { Store } from "lucide-react";
-import { connectDB } from "@/lib/mongoose";
 import { getCurrentUser } from "@/lib/dal";
-import { Shop } from "@/models";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
 import { UserMenu } from "@/components/dashboard/user-menu";
 import { MobileSidebar } from "@/components/dashboard/mobile-sidebar";
@@ -12,14 +10,10 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // JWT-only — no DB round-trip on the layout so navigation stays instant even
+  // when the cloud is slow/unreachable. The shop name rides in the session token.
   const user = await getCurrentUser();
-  await connectDB();
-
-  let shopName = "Your Shop";
-  if (user.shopId) {
-    const shop = await Shop.findById(user.shopId).select("name").lean<{ name: string } | null>();
-    shopName = shop?.name ?? shopName;
-  }
+  const shopName = user.shopName?.trim() || "Your Shop";
 
   return (
     <div className="min-h-screen flex gap-3 bg-background text-foreground">
@@ -31,7 +25,7 @@ export default async function DashboardLayout({
           <span className="font-semibold tracking-tight truncate">{shopName}</span>
         </div>
         <div className="flex-1 overflow-y-auto py-3">
-          <SidebarNav />
+          <SidebarNav role={user.role} pageAccess={user.pageAccess} />
         </div>
         <div className="border-t border-sidebar-border px-5 py-3 text-xs text-sidebar-foreground/60">
           RETAILO · v0.1
@@ -40,12 +34,14 @@ export default async function DashboardLayout({
       <div className="flex-1 flex flex-col min-w-0 gap-3 p-3">
         <header className="sticky top-3 z-30 h-16 rounded-2xl border bg-muted text-foreground flex items-center justify-between px-3 sm:px-4 gap-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <MobileSidebar shopName={shopName} />
+            <MobileSidebar
+              shopName={shopName}
+              role={user.role}
+              pageAccess={user.pageAccess}
+            />
             <HeaderSearch />
           </div>
-          <a className="flex items-center gap-2 shrink-0" href="/dashboard/profile">
-            <UserMenu name={user.name} email={user.email} role={user.role} />
-          </a>
+          <UserMenu name={user.name} email={user.email} role={user.role} />
         </header>
         <main className="flex-1 rounded-2xl border bg-card text-card-foreground shadow-sm p-5 sm:p-7 lg:p-8 overflow-y-auto">
           {children}

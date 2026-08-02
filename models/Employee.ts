@@ -28,6 +28,14 @@ const EmployeeSchema = new Schema(
     joinedAt: { type: Date, default: () => new Date() },
     notes: { type: String, default: null, trim: true },
     userId: { type: Schema.Types.ObjectId, ref: "User", default: null },
+    canLogin: { type: Boolean, default: false },
+    username: { type: String, default: null, lowercase: true, trim: true },
+    loginRole: {
+      type: String,
+      enum: ["MANAGER", "CASHIER", "SALES_EXECUTIVE"],
+      default: "CASHIER",
+    },
+    pageAccess: { type: [String], default: [] },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true },
@@ -35,6 +43,10 @@ const EmployeeSchema = new Schema(
 
 EmployeeSchema.index({ shopId: 1, name: 1 });
 EmployeeSchema.index({ shopId: 1, branchId: 1, isActive: 1 });
+EmployeeSchema.index(
+  { username: 1 },
+  { unique: true, sparse: true, partialFilterExpression: { username: { $type: "string" } } },
+);
 
 export type EmployeeDoc = InferSchemaType<typeof EmployeeSchema> & {
   _id: Types.ObjectId;

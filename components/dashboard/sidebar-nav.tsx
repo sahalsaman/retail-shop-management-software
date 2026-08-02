@@ -17,34 +17,44 @@ import {
   Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { normalizePageAccess, type DashboardPagePermission } from "@/lib/permissions";
+import type { Role } from "@/lib/types";
 
 type NavItem = {
   href: string;
   label: string;
   icon: typeof LayoutDashboard;
+  permission: DashboardPagePermission;
   exact?: boolean;
 };
 
 const ITEMS: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/dashboard/pos", label: "POS Billing", icon: ShoppingCart },
-  { href: "/dashboard/products", label: "Products", icon: Package },
-  { href: "/dashboard/inventory", label: "Inventory", icon: Boxes },
-  { href: "/dashboard/customers", label: "Customers", icon: Users },
-  { href: "/dashboard/invoices", label: "Invoices", icon: FileText },
-  { href: "/dashboard/suppliers", label: "Suppliers", icon: Truck },
-  { href: "/dashboard/purchases", label: "Purchases", icon: Receipt },
-  { href: "/dashboard/expenses", label: "Expenses", icon: Wallet },
-  { href: "/dashboard/reports", label: "Reports", icon: BarChart3 },
-  { href: "/dashboard/branches", label: "Branches", icon: Building2 },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, permission: "dashboard", exact: true },
+  { href: "/dashboard/pos", label: "POS Billing", icon: ShoppingCart, permission: "pos" },
+  { href: "/dashboard/products", label: "Products", icon: Package, permission: "products" },
+  { href: "/dashboard/inventory", label: "Inventory", icon: Boxes, permission: "inventory" },
+  { href: "/dashboard/customers", label: "Customers", icon: Users, permission: "customers" },
+  { href: "/dashboard/invoices", label: "Invoices", icon: FileText, permission: "invoices" },
+  { href: "/dashboard/suppliers", label: "Suppliers", icon: Truck, permission: "suppliers" },
+  { href: "/dashboard/purchases", label: "Purchases", icon: Receipt, permission: "purchases" },
+  { href: "/dashboard/expenses", label: "Expenses", icon: Wallet, permission: "expenses" },
+  { href: "/dashboard/reports", label: "Reports", icon: BarChart3, permission: "reports" },
+  { href: "/dashboard/branches", label: "Branches", icon: Building2, permission: "branches" },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings, permission: "settings" },
 ];
 
-export function SidebarNav() {
+export function SidebarNav({
+  role,
+  pageAccess,
+}: {
+  role: Role;
+  pageAccess: string[];
+}) {
   const pathname = usePathname();
+  const allowed = normalizePageAccess(role, pageAccess);
   return (
     <nav className="flex flex-col gap-0.5 px-2 py-2">
-      {ITEMS.map((item) => {
+      {ITEMS.filter((item) => allowed.includes(item.permission)).map((item) => {
         const Icon = item.icon;
         const active = item.exact
           ? pathname === item.href

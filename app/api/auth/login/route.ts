@@ -8,6 +8,7 @@ import { fail, handleError, ok } from "@/lib/api";
 import { getDb, nowMs, pruneOtherShops, setMeta } from "@/lib/sqlite";
 import { startSyncLoop } from "@/lib/sync/tick";
 import { isDesktop } from "@/lib/runtime";
+import { normalizePageAccess } from "@/lib/permissions";
 import type { Role } from "@/lib/types";
 
 // Login always goes to cloud Mongo — credentials never live in local SQLite.
@@ -27,7 +28,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const user = await User.findOne({ email: input.email });
+    const user = await User.findOne({
+      $or: [{ email: input.email }, { username: input.email }],
+    });
     if (!user || !user.isActive) {
       return fail("Invalid email or password", 401);
     }
@@ -42,6 +45,18 @@ export async function POST(req: NextRequest) {
     const userId = user._id.toString();
     const shopId = user.shopId ? user.shopId.toString() : null;
     const branchId = user.branchId ? user.branchId.toString() : null;
+    const role = user.role as Role;
+    const pageAccess = normalizePageAccess(role, user.pageAccess);
+
+    // Resolve the shop name once at login so the dashboard shell can read it
+    // from the JWT instead of querying Mongo on every page render.
+    let shopName: string | null = null;
+    if (shopId) {
+      const shopForName = await Shop.findById(shopId)
+        .select("name")
+        .lean<{ name: string } | null>();
+      shopName = shopForName?.name ?? null;
+    }
 
     // Mirror shop + branches into SQLite for offline app context. Desktop only
     // — the web build has no local SQLite store and talks to cloud Mongo live.
@@ -121,15 +136,17 @@ export async function POST(req: NextRequest) {
       userId,
       shopId,
       branchId,
-      role: user.role as Role,
+      role,
       email: user.email,
       name: user.name,
+      shopName,
+      pageAccess,
     });
 
     if (isDesktop()) startSyncLoop();
 
     return ok({
-      user: { id: userId, name: user.name, email: user.email, role: user.role },
+      user: { id: userId, name: user.name, email: user.email, role: user.role, pageAccess },
     });
   } catch (err) {
     return handleError(err);

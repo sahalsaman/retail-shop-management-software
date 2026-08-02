@@ -25,6 +25,8 @@ export const getCurrentUser = cache(async () => {
     role: session.role,
     shopId: session.shopId,
     branchId: session.branchId,
+    shopName: session.shopName ?? null,
+    pageAccess: session.pageAccess ?? [],
     phone: null as string | null,
   };
 });

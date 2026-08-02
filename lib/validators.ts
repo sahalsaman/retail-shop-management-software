@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { SHOP_TYPES, STOCK_MOVEMENT_TYPES } from "./types";
+import { ROLES, SHOP_TYPES, STOCK_MOVEMENT_TYPES } from "./types";
 
 const objectIdRegex = /^[0-9a-fA-F]{24}$/;
 const objectId = z.string().regex(objectIdRegex, "Invalid id");
@@ -400,7 +400,28 @@ export const EmployeeSchema = z.object({
     .max(240)
     .optional()
     .transform((v) => (v ? v : null)),
+  canLogin: z.coerce.boolean().default(false),
+  username: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .max(40)
+    .regex(/^[a-z0-9._-]*$/, "Username can use letters, numbers, dot, dash, underscore")
+    .optional()
+    .transform((v) => (v ? v : null)),
+  password: z
+    .string()
+    .max(120)
+    .optional()
+    .transform((v) => (v ? v : null)),
+  loginRole: z.enum(ROLES).default("CASHIER").refine((r) => r !== "ADMIN" && r !== "OWNER", {
+    message: "Employee role cannot be admin or owner",
+  }),
+  pageAccess: z.array(z.string()).default([]),
   isActive: z.coerce.boolean().default(true),
+}).refine((d) => !d.canLogin || !!d.username, {
+  message: "Username is required when app access is enabled",
+  path: ["username"],
 });
 
 export const SalaryPaymentSchema = z.object({

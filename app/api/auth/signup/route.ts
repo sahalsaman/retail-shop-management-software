@@ -8,6 +8,7 @@ import { fail, handleError, ok } from "@/lib/api";
 import { getDb, nowMs, pruneOtherShops, setMeta } from "@/lib/sqlite";
 import { startSyncLoop } from "@/lib/sync/tick";
 import { isDesktop } from "@/lib/runtime";
+import { DEFAULT_ROLE_PAGE_ACCESS } from "@/lib/permissions";
 
 export async function POST(req: NextRequest) {
   try {
@@ -91,6 +92,8 @@ export async function POST(req: NextRequest) {
       role: "OWNER",
       email: user.email,
       name: user.name,
+      shopName: shop.name,
+      pageAccess: DEFAULT_ROLE_PAGE_ACCESS.OWNER,
     });
 
     if (isDesktop()) startSyncLoop();

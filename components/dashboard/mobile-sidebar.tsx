@@ -11,8 +11,17 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { SidebarNav } from "./sidebar-nav";
+import type { Role } from "@/lib/types";
 
-export function MobileSidebar({ shopName }: { shopName: string }) {
+export function MobileSidebar({
+  shopName,
+  role,
+  pageAccess,
+}: {
+  shopName: string;
+  role: Role;
+  pageAccess: string[];
+}) {
   const [open, setOpen] = useState(false);
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -36,7 +45,7 @@ export function MobileSidebar({ shopName }: { shopName: string }) {
           </SheetTitle>
         </SheetHeader>
         <div onClick={() => setOpen(false)}>
-          <SidebarNav />
+          <SidebarNav role={role} pageAccess={pageAccess} />
         </div>
       </SheetContent>
     </Sheet>

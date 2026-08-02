@@ -9,6 +9,7 @@ import { Shop, User, Invite, Branch } from "@/models";
 import { CreateInviteSchema, AcceptInviteSchema } from "@/lib/validators";
 import { requireRole } from "@/lib/dal";
 import { createSession } from "@/lib/session";
+import { DEFAULT_ROLE_PAGE_ACCESS } from "@/lib/permissions";
 import type { Role } from "@/lib/types";
 
 export type AdminActionResult =
@@ -170,6 +171,8 @@ export async function acceptInvite(form: FormData): Promise<AdminActionResult> {
     role: "OWNER",
     email: owner.email,
     name: owner.name,
+    shopName: shop.name,
+    pageAccess: DEFAULT_ROLE_PAGE_ACCESS.OWNER,
   });
 
   revalidatePath("/admin/invites");

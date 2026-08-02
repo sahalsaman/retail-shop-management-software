@@ -13,5 +13,6 @@ export async function GET() {
     role: session.role,
     shopId: session.shopId,
     branchId: session.branchId,
+    pageAccess: session.pageAccess ?? [],
   });
 }
