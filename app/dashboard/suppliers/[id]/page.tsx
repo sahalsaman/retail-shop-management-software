@@ -15,6 +15,7 @@ import {
 import { formatINR, formatDateTime } from "@/lib/format";
 import { recordSupplierPayment } from "@/lib/actions/suppliers";
 import { RecordPaymentDialog } from "@/components/dashboard/people/record-payment-dialog";
+import { ManualPurchaseDialog } from "@/components/dashboard/suppliers/manual-purchase-dialog";
 
 export default async function SupplierDetailPage({
   params,
@@ -27,6 +28,7 @@ export default async function SupplierDetailPage({
 
   const { supplier, entries } = await getSupplierLedger(user.shopId, id);
   if (!supplier) notFound();
+  const canAddManualPurchase = user.role === "OWNER" || user.role === "ADMIN";
 
   return (
     <div className="space-y-5">
@@ -46,6 +48,9 @@ export default async function SupplierDetailPage({
           </p>
         </div>
         <div className="flex gap-2">
+          {canAddManualPurchase && (
+            <ManualPurchaseDialog supplierId={supplier.id} supplierName={supplier.name} />
+          )}
           <Link
             href={`/dashboard/purchases/new?supplier=${supplier.id}`}
             className="inline-flex items-center justify-center h-8 rounded-lg border bg-background px-2.5 text-sm font-medium hover:bg-muted gap-1.5"

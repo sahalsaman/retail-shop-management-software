@@ -116,7 +116,7 @@ export async function getSupplierLedger(
 
   const [purchases, payments] = await Promise.all([
     Purchase.find({ shopId: shopIdStr, supplierId: supplierIdStr })
-      .select("invoiceNumber total paidAmount status createdAt")
+      .select("invoiceNumber total paidAmount status notes createdAt")
       .lean<
         Array<{
           _id: Types.ObjectId;
@@ -124,6 +124,7 @@ export async function getSupplierLedger(
           total: number;
           paidAmount: number;
           status: string;
+          notes: string | null;
           createdAt: Date;
         }>
       >(),
@@ -155,7 +156,9 @@ export async function getSupplierLedger(
       id: String(p._id),
       date: p.createdAt,
       type: "PURCHASE" as const,
-      description: `Invoice ${p.invoiceNumber}`,
+      description: p.invoiceNumber.startsWith("MANUAL-")
+        ? `Manual purchase amount${p.notes ? ` - ${p.notes}` : ""}`
+        : `Invoice ${p.invoiceNumber}`,
       debit: 0,
       credit: p.total,
     })),

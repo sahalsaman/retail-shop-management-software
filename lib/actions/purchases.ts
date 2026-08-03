@@ -13,10 +13,29 @@ import {
 } from "@/models";
 import { PurchaseCreateSchema } from "@/lib/validators";
 import { getCurrentUser } from "@/lib/dal";
+import { getDefaultBranchId } from "@/lib/queries/branches";
+import { z } from "zod";
 
 export type ActionResult =
   | { ok: true; id: string; invoiceNumber: string }
   | { ok: false; error: string };
+
+const ManualSupplierPurchaseSchema = z.object({
+  amount: z.coerce.number().positive("Amount must be greater than zero"),
+  paidAmount: z.coerce.number().min(0, "Paid amount cannot be negative").default(0),
+  paymentMethod: z.enum(["CASH", "UPI", "CARD", "CREDIT"]).default("CASH"),
+  date: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v ? new Date(`${v}T00:00:00`) : new Date())),
+  note: z
+    .string()
+    .trim()
+    .max(240)
+    .optional()
+    .transform((v) => (v ? v : null)),
+});
 
 function round2(n: number) {
   return Math.round(n * 100) / 100;
@@ -176,6 +195,106 @@ export async function createPurchase(payload: unknown): Promise<ActionResult> {
   revalidatePath("/dashboard/purchases");
   revalidatePath("/dashboard/inventory");
   revalidatePath(`/dashboard/suppliers/${input.supplierId}`);
+
+  return {
+    ok: true,
+    id: String(purchase._id),
+    invoiceNumber: purchase.invoiceNumber,
+  };
+}
+
+function readManualPurchaseForm(form: FormData) {
+  return {
+    amount: String(form.get("amount") ?? "0"),
+    paidAmount: String(form.get("paidAmount") ?? "0"),
+    paymentMethod: String(form.get("paymentMethod") ?? "CASH"),
+    date: String(form.get("date") ?? ""),
+    note: String(form.get("note") ?? ""),
+  };
+}
+
+function dateKey(d: Date) {
+  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export async function createManualSupplierPurchase(
+  supplierId: string,
+  form: FormData,
+): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user.shopId) return { ok: false, error: "No shop" };
+  if (user.role !== "OWNER" && user.role !== "ADMIN") {
+    return { ok: false, error: "Only owner can add manual purchase amount" };
+  }
+  if (!Types.ObjectId.isValid(supplierId)) {
+    return { ok: false, error: "Invalid supplier" };
+  }
+
+  const parsed = ManualSupplierPurchaseSchema.safeParse(readManualPurchaseForm(form));
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  await connectDB();
+  const shopId = new Types.ObjectId(user.shopId);
+  const supplier = await Supplier.findOne({ _id: supplierId, shopId }).select("_id").lean();
+  if (!supplier) return { ok: false, error: "Supplier not found" };
+
+  const branchId = await getDefaultBranchId(user.shopId, user.branchId);
+  if (!branchId) return { ok: false, error: "No branch found" };
+
+  const input = parsed.data;
+  const total = round2(input.amount);
+  const paidAmount = Math.min(round2(input.paidAmount), total);
+  const dueAmount = round2(total - paidAmount);
+  const status =
+    paidAmount >= total ? "PAID" : paidAmount > 0 ? "PARTIAL" : "PENDING";
+  const invoiceNumber = `MANUAL-${dateKey(input.date)}-${Date.now().toString(36).toUpperCase()}`;
+
+  const purchase = new Purchase({
+    shopId,
+    branchId,
+    invoiceNumber,
+    supplierId,
+    items: [],
+    subtotal: total,
+    cgst: 0,
+    sgst: 0,
+    igst: 0,
+    totalTax: 0,
+    total,
+    paidAmount,
+    dueAmount,
+    status,
+    notes: input.note ?? "Manual purchase amount",
+    createdBy: user.id,
+  });
+  purchase.createdAt = input.date;
+  purchase.updatedAt = new Date();
+  await purchase.save();
+
+  if (paidAmount > 0) {
+    await Payment.create({
+      shopId,
+      branchId,
+      type: "PURCHASE_PAYMENT",
+      refId: purchase._id,
+      supplierId,
+      amount: paidAmount,
+      method: input.paymentMethod,
+      date: input.date,
+      note: input.note ?? "Manual purchase payment",
+      createdBy: user.id,
+    });
+  }
+
+  if (dueAmount > 0) {
+    await Supplier.updateOne({ _id: supplierId, shopId }, { $inc: { currentBalance: dueAmount } });
+  }
+
+  revalidatePath("/dashboard/purchases");
+  revalidatePath("/dashboard/reports");
+  revalidatePath(`/dashboard/suppliers/${supplierId}`);
 
   return {
     ok: true,

@@ -23,6 +23,7 @@ import type { BranchListItem } from "@/lib/queries/branches";
 
 const CATEGORIES = [
   ["RENT", "Rent"],
+  ["COLLECTION", "Collection"],
   ["SALARY", "Salary"],
   ["ELECTRICITY", "Electricity"],
   ["INTERNET", "Internet"],
@@ -31,6 +32,7 @@ const CATEGORIES = [
   ["MARKETING", "Marketing"],
   ["STATIONERY", "Stationery"],
   ["FOOD", "Food"],
+  ["COLLECTION", "Collection"],
   ["OTHER", "Other"],
 ] as const;
 
